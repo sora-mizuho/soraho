@@ -154,7 +154,8 @@ def fmt_date(d):
 
 
 def slug(r):
-    return (r["date"].replace("-", "") or "nodate") + "-" + r["id"][:8]
+    # Notion のページIDは先頭がワークスペース内で共通なので、末尾を使って重複を避ける
+    return (r["date"].replace("-", "") or "nodate") + "-" + r["id"][-8:]
 
 
 def parse_players(raw):
