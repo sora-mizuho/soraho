@@ -360,11 +360,13 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
 </head>
 <body>
 <div class="wrap">
+<div class="top">
 <header class="site">
   <a class="logo" href="{root}index.html{V}">{esc(CONFIG["site_title"])}</a>
   <p>{esc(CONFIG["site_description"])}</p>
 </header>
 <nav class="main">{nav_html}</nav>
+</div>
 <main>
 {body}
 </main>

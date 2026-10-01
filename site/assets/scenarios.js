@@ -76,8 +76,8 @@
     document.querySelector(`[data-group="${a.dataset.g}"]`)?.scrollIntoView({ block: "start" });
   });
 
-  // 固定したメニューの高さぶん、50音の目次を下にずらす
-  const nav = document.querySelector("nav.main");
+  // 固定したサイト名とメニューの高さぶん、50音の目次を下にずらす
+  const nav = document.querySelector(".top");
   const syncNav = () => document.documentElement.style.setProperty("--navh", nav.offsetHeight + "px");
   window.addEventListener("resize", syncNav);
   syncNav();
