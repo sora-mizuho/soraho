@@ -14,6 +14,7 @@ import mimetypes
 import os
 import shutil
 import sys
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -23,6 +24,8 @@ OUT = ROOT.parent / "_site"
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
 BASE = CONFIG["base_url"].rstrip("/") + "/"
 NOTION_VERSION = "2022-06-28"
+# 更新ごとに変わる目印。サイト内リンクに付けて、古いページの表示（キャッシュ）を避ける
+V = "?v=" + time.strftime("%Y%m%d%H%M%S")
 FONT_LINK = (
     '<link rel="preconnect" href="https://fonts.googleapis.com">'
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
@@ -197,7 +200,7 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
     nav = [("index.html", "ホーム", "home"), ("reports/index.html", "🎲 卓報告", "reports"), ("scenarios.html", "📚 シナリオ一覧", "scenarios")]
     cur = ' aria-current="page"'
     nav_html = "".join(
-        f'<a href="{root}{href}"{cur if key == current else ""}>{label}</a>' for href, label, key in nav
+        f'<a href="{root}{href}{V}"{cur if key == current else ""}>{label}</a>' for href, label, key in nav
     )
     meta = [
         f'<meta name="description" content="{esc(description)}">',
@@ -218,13 +221,13 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
 <title>{esc(full_title)}</title>
 {chr(10).join(meta)}
 {FONT_LINK}
-<link rel="stylesheet" href="{root}assets/style.css">
+<link rel="stylesheet" href="{root}assets/style.css{V}">
 {extra_head}
 </head>
 <body>
 <div class="wrap">
 <header class="site">
-  <a class="logo" href="{root}index.html">{esc(CONFIG["site_title"])}</a>
+  <a class="logo" href="{root}index.html{V}">{esc(CONFIG["site_title"])}</a>
   <p>{esc(CONFIG["site_description"])}</p>
 </header>
 <nav class="main">{nav_html}</nav>
@@ -257,8 +260,8 @@ def build_home(scenarios, reports):
   </dl>
 </section>
 <div class="entries">
-  <a class="entry" href="reports/index.html"><span class="e-title">🎲 卓報告</span><span class="e-sub">遊んだ卓の記録とネタバレ感想</span><span class="e-n">{len(reports)}件</span></a>
-  <a class="entry" href="scenarios.html"><span class="e-title">📚 シナリオ一覧</span><span class="e-sub">通過・所持・KP/GM済みのシナリオ</span><span class="e-n">{len(scenarios)}件</span></a>
+  <a class="entry" href="reports/index.html{V}"><span class="e-title">🎲 卓報告</span><span class="e-sub">遊んだ卓の記録とネタバレ感想</span><span class="e-n">{len(reports)}件</span></a>
+  <a class="entry" href="scenarios.html{V}"><span class="e-title">📚 シナリオ一覧</span><span class="e-sub">通過・所持・KP/GM済みのシナリオ</span><span class="e-n">{len(scenarios)}件</span></a>
 </div>"""
     (OUT / "index.html").write_text(page(
         title=CONFIG["site_title"], description=CONFIG["site_description"], path="",
@@ -277,7 +280,7 @@ def build_scenarios(scenarios):
 <div class="index" id="index"></div>
 <div id="list"><p class="empty">シナリオ一覧を読み込んでいます…</p></div>
 <button class="totop" id="totop" hidden>↑ ページの先頭へ</button>"""
-    scripts = f'<script id="scenario-data" type="application/json">{data}</script>\n<script src="assets/scenarios.js"></script>'
+    scripts = f'<script id="scenario-data" type="application/json">{data}</script>\n<script src="assets/scenarios.js{V}"></script>'
     (OUT / "scenarios.html").write_text(page(
         title="シナリオ一覧", description=f"所持・通過シナリオの一覧（{len(scenarios)}件）", path="scenarios.html",
         root="", current="scenarios", body=body, scripts=scripts), encoding="utf-8")
@@ -291,7 +294,7 @@ def build_reports(reports):
         img = r.get("_img", "")
         cover = f'<img class="cover" src="../{esc(img)}" alt="" loading="lazy">' if img else '<div class="cover"></div>'
         meta = " ".join(f"<span>{esc(x)}</span>" for x in [fmt_date(r["date"]), r["sys"], ("KP：" + r["kp"]) if r["kp"] else ""] if x)
-        cards.append(f'<a class="card" href="{s}.html">{cover}<div class="body"><span class="t">{esc(r["title"])}</span><span class="d">{meta}</span></div></a>')
+        cards.append(f'<a class="card" href="{s}.html{V}">{cover}<div class="body"><span class="t">{esc(r["title"])}</span><span class="d">{meta}</span></div></a>')
 
         players = parse_players(r["players"])
         has_ho = any(p["ho"] for p in players)
@@ -307,7 +310,7 @@ def build_reports(reports):
         spoiler = f'<details class="spoiler"><summary>⚠️ ネタバレ感想</summary><div class="in">{multiline(r["spoiler"])}</div></details>' if r["spoiler"] else ""
         hero = f'<img class="cover" src="../{esc(img)}" alt="{esc(r["title"])}の部屋画像">' if img else ""
         body = f"""<article class="report">
-  <a class="back" href="index.html">← 卓報告の一覧へ</a>
+  <a class="back" href="index.html{V}">← 卓報告の一覧へ</a>
   {hero}
   <h1>{esc(r["title"])}</h1>
   <dl class="facts">{facts}</dl>
