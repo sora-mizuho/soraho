@@ -78,32 +78,44 @@ def files(prop):
     return urls
 
 
+def prop(pr, name):
+    """欄の名前で探す。Notion 側で名前に説明を足しても見つかるよう、前方一致も許す。"""
+    if name in pr:
+        return pr[name]
+    return next((v for k, v in pr.items() if k.startswith(name)), None)
+
+
+def title_prop(pr):
+    """タイトルの欄は名前が変わっても種類（title）で見つける。"""
+    return next((v for v in pr.values() if v.get("type") == "title"), None)
+
+
 def load_from_notion():
     scenarios = []
     for p in query_all(CONFIG["notion"]["scenarios_database_id"]):
         pr = p["properties"]
-        name = text(pr.get("シナリオ名"))
+        name = text(title_prop(pr))
         if not name or name.startswith("【見本】"):
             continue
         scenarios.append({
             "n": name,
-            "f": text(pr.get("ふりがな")) or name,
-            "s": select(pr.get("システム")) or "CoC6版",
-            "ho": text(pr.get("遊んだHO")),
-            "t": [o["name"] for o in pr.get("タグ", {}).get("multi_select", [])],
-            "own": bool(pr.get("所持", {}).get("checkbox")),
-            "pl": bool(pr.get("PL通過", {}).get("checkbox")),
-            "kp": bool(pr.get("KP/GM済み", {}).get("checkbox")),
-            "url": (pr.get("BOOTH") or {}).get("url") or "",
+            "f": text(prop(pr, "ふりがな")) or name,
+            "s": select(prop(pr, "システム")) or "CoC6版",
+            "ho": text(prop(pr, "遊んだHO")),
+            "t": [o["name"] for o in (prop(pr, "タグ") or {}).get("multi_select", [])],
+            "own": bool((prop(pr, "所持") or {}).get("checkbox")),
+            "pl": bool((prop(pr, "PL通過") or {}).get("checkbox")),
+            "kp": bool((prop(pr, "KP/GM済み") or {}).get("checkbox")),
+            "url": (prop(pr, "BOOTH") or {}).get("url") or "",
         })
     reports = []
     for p in query_all(CONFIG["notion"]["reports_database_id"]):
         pr = p["properties"]
-        title = text(pr.get("タイトル"))
+        title = text(title_prop(pr))
         if not title:
             continue
-        date = (pr.get("開催日") or {}).get("date") or {}
-        imgs = files(pr.get("部屋画像"))
+        date = (prop(pr, "開催日") or {}).get("date") or {}
+        imgs = files(prop(pr, "部屋画像"))
         cover = p.get("cover") or {}
         if not imgs and cover:
             imgs = [cover.get(cover.get("type"), {}).get("url", "")]
@@ -111,11 +123,11 @@ def load_from_notion():
             "id": p["id"].replace("-", ""),
             "title": title,
             "date": (date.get("start") or "")[:10],
-            "sys": select(pr.get("システム")),
-            "kp": text(pr.get("KP/GM")),
-            "players": text(pr.get("参加者")),
-            "comment": text(pr.get("一言コメント")),
-            "spoiler": text(pr.get("ネタバレ感想")),
+            "sys": select(prop(pr, "システム")),
+            "kp": text(prop(pr, "KP/GM")),
+            "players": text(prop(pr, "参加者")),
+            "comment": text(prop(pr, "一言コメント")),
+            "spoiler": text(prop(pr, "ネタバレ感想")),
             "image": next((u for u in imgs if u), ""),
         })
     return scenarios, reports
