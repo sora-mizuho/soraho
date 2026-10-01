@@ -76,6 +76,12 @@
     document.querySelector(`[data-group="${a.dataset.g}"]`)?.scrollIntoView({ block: "start" });
   });
 
+  // 固定したメニューの高さぶん、50音の目次を下にずらす
+  const nav = document.querySelector("nav.main");
+  const syncNav = () => document.documentElement.style.setProperty("--navh", nav.offsetHeight + "px");
+  window.addEventListener("resize", syncNav);
+  syncNav();
+
   const totop = document.getElementById("totop");
   const syncTop = () => { totop.hidden = window.scrollY < 400; };
   window.addEventListener("scroll", syncTop, { passive: true });

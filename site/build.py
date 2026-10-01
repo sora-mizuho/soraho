@@ -415,7 +415,7 @@ def build_tokui(items, profile):
         root="", current="tokui", body=body), encoding="utf-8")
 
 
-def build_home(scenarios, reports, profile):
+def build_home(profile):
     p = CONFIG["profile"]
     links = []
     if p.get("x"):
@@ -440,11 +440,7 @@ def build_home(scenarios, reports, profile):
     {"".join(links)}
   </dl>
 </section>
-<div class="entries">
-  <a class="entry e-rp" href="reports/index.html{V}"><span class="e-title">🎲 卓報告</span><span class="e-sub">遊んだ卓の記録とネタバレ感想</span><span class="e-n">{len(reports)}件</span></a>
-  <a class="entry e-sc" href="scenarios.html{V}"><span class="e-title">📚 シナリオ一覧</span><span class="e-sub">通過・所持・KP/GM済みのシナリオ</span><span class="e-n">{len(scenarios)}件</span></a>
-  <a class="entry e-tk" href="tokui.html{V}"><span class="e-title">🧡 得意と苦手</span><span class="e-sub">好きなこと・苦手なこと・NG（地雷）</span><span class="e-n">同卓前にご確認ください</span></a>
-</div>
+<p class="nudge">同卓前に <a href="tokui.html{V}">🧡 得意と苦手</a> もご確認ください</p>
 {f'<div class="abouts">{extra}</div>' if extra else ""}
 {footer_note}"""
     (OUT / "index.html").write_text(page(
@@ -543,7 +539,7 @@ def main():
     for r in reports:
         r["_img"] = save_image(r.get("image", ""), slug(r))
 
-    build_home(scenarios, reports, profile)
+    build_home(profile)
     build_scenarios(scenarios, profile)
     build_reports(reports)
     build_tokui(tokui, profile)
