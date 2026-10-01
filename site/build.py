@@ -189,6 +189,8 @@ def rich_html(items):
     out = []
     for t in items:
         s = esc(t.get("plain_text", "")).replace("\n", "<br>")
+        if (t.get("annotations") or {}).get("bold"):
+            s = f"<strong>{s}</strong>"
         href = t.get("href")
         out.append(f'<a href="{esc(href)}" target="_blank" rel="noopener">{s}</a>' if href else s)
     return "".join(out).strip()

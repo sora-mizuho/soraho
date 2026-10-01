@@ -40,6 +40,7 @@ nav.main a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accen
 .abouts{display:flex;flex-direction:column;gap:18px;margin-bottom:30px}
 .about h2,.site-note h2{font-size:15px;font-weight:900;margin:0 0 4px;padding-left:10px;border-left:3px solid var(--accent)}
 .about p,.site-note p{margin:0 0 4px}
+.about li+li{margin-top:2px}.about strong{font-weight:700;color:var(--accent)}
 .about ul,.site-note ul,.notice ul,.tk-intro ul{margin:0 0 4px;padding-left:1.4em}
 .site-note{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted)}
 .site-note h2{font-size:13.5px;color:var(--ink)}
