@@ -1,0 +1,16 @@
+{
+  "site_title": "そらほの卓記録",
+  "site_description": "TRPGの卓報告と、所持・通過シナリオの一覧です。",
+  "base_url": "https://sora-mizuho.github.io/soraho/",
+  "profile": {
+    "name": "そらほ",
+    "intro": "TRPG（主にCoC）で遊んでいます。",
+    "owned_books": "クトゥルフ神話TRPG6版・7版基本ルールブック、2010・2015・2020・2026サプリ、キパコン、フラグメント、パルプクトゥルフ、マレモンVol.1・2",
+    "x": "soraho_trpg",
+    "mixi2": "soraho"
+  },
+  "notion": {
+    "scenarios_database_id": "d0c59603585d4567805047501a2304d9",
+    "reports_database_id": "e7184ca1a72b47709087654c4b65b0c6"
+  }
+}
