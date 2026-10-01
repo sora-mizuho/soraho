@@ -447,7 +447,7 @@ def build_home(profile):
 {footer_note}"""
     (OUT / "index.html").write_text(page(
         title=CONFIG["site_title"], description=CONFIG["site_description"], path="",
-        root="", current="home", body=body), encoding="utf-8")
+        root="", current="home", body=body, image="assets/ogp.png"), encoding="utf-8")
 
 
 def build_scenarios(scenarios, profile):
