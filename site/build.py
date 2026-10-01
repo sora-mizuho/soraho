@@ -10,6 +10,7 @@
 
 import html
 import json
+import re
 import mimetypes
 import os
 import shutil
@@ -207,7 +208,8 @@ def slug(r):
 
 def parse_players(raw):
     rows = []
-    for line in (raw or "").splitlines():
+    # 1人ずつ改行、または「;」「；」で区切る（Notion のフォームは改行できないため）
+    for line in re.split(r"[\n;；]", raw or ""):
         parts = [x.strip() for x in line.replace("／", "/").split("/")]
         if not any(parts):
             continue
@@ -352,7 +354,7 @@ def build_reports(reports):
         facts = "".join(f"<dt>{k}</dt><dd>{esc(v)}</dd>" for k, v in [("開催日", fmt_period(r)), ("システム", r["sys"]), ("KP/GM", r["kp"])] if v)
         comment = f'<section><h2>ひとこと</h2><p class="comment">{multiline(r["comment"])}</p></section>' if r["comment"] else ""
         spoiler = f'<details class="spoiler"><summary>⚠️ ネタバレ感想</summary><div class="in">{multiline(r["spoiler"])}</div></details>' if r["spoiler"] else ""
-        hero = f'<img class="cover" src="../{esc(img)}" alt="{esc(r["title"])}の部屋画像">' if img else ""
+        hero = f'<img class="hero" src="../{esc(img)}" alt="{esc(r["title"])}の部屋画像">' if img else ""
         body = f"""<article class="report">
   <a class="back" href="index.html{V}">← 卓報告の一覧へ</a>
   {hero}
