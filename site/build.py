@@ -151,6 +151,7 @@ def load_from_notion():
             "id": p["id"].replace("-", ""),
             "title": title,
             "date": (date.get("start") or "")[:10],
+            "end": (date.get("end") or "")[:10],
             "sys": select(prop(pr, "システム")),
             "kp": text(prop(pr, "KP/GM")),
             "players": text(prop(pr, "参加者")),
@@ -179,6 +180,24 @@ def multiline(s):
 
 def fmt_date(d):
     return d.replace("-", "/") if d else ""
+
+
+def fmt_period(r):
+    """開催日を「2026/09/20〜27」のように表示する。年や月が変わるところだけ書く。"""
+    start, end = r.get("date") or "", r.get("end") or ""
+    if not end or end == start:
+        return fmt_date(start)
+    if not start:
+        return fmt_date(end)
+    sy, sm, _ = start.split("-")
+    ey, em, ed = end.split("-")
+    if sy != ey:
+        tail = fmt_date(end)
+    elif sm != em:
+        tail = f"{em}/{ed}"
+    else:
+        tail = ed
+    return f"{fmt_date(start)}〜{tail}"
 
 
 def slug(r):
@@ -318,7 +337,7 @@ def build_reports(reports):
         s = slug(r)
         img = r.get("_img", "")
         cover = f'<img class="cover" src="../{esc(img)}" alt="" loading="lazy">' if img else '<div class="cover"></div>'
-        meta = " ".join(f"<span>{esc(x)}</span>" for x in [fmt_date(r["date"]), r["sys"], ("KP：" + r["kp"]) if r["kp"] else ""] if x)
+        meta = " ".join(f"<span>{esc(x)}</span>" for x in [fmt_period(r), r["sys"], ("KP：" + r["kp"]) if r["kp"] else ""] if x)
         cards.append(f'<a class="card" href="{s}.html{V}">{cover}<div class="body"><span class="t">{esc(r["title"])}</span><span class="d">{meta}</span></div></a>')
 
         players = parse_players(r["players"])
@@ -330,7 +349,7 @@ def build_reports(reports):
                 "<tr>" + (f"<td>{esc(p['ho'])}</td>" if has_ho else "") + f"<td>{esc(p['pl'])}</td><td>{esc(p['pc'])}</td></tr>"
                 for p in players)
             table = f'<section><h2>参加者</h2><div class="tablewrap"><table><thead><tr>{head}</tr></thead><tbody>{rows}</tbody></table></div></section>'
-        facts = "".join(f"<dt>{k}</dt><dd>{esc(v)}</dd>" for k, v in [("開催日", fmt_date(r["date"])), ("システム", r["sys"]), ("KP/GM", r["kp"])] if v)
+        facts = "".join(f"<dt>{k}</dt><dd>{esc(v)}</dd>" for k, v in [("開催日", fmt_period(r)), ("システム", r["sys"]), ("KP/GM", r["kp"])] if v)
         comment = f'<section><h2>ひとこと</h2><p class="comment">{multiline(r["comment"])}</p></section>' if r["comment"] else ""
         spoiler = f'<details class="spoiler"><summary>⚠️ ネタバレ感想</summary><div class="in">{multiline(r["spoiler"])}</div></details>' if r["spoiler"] else ""
         hero = f'<img class="cover" src="../{esc(img)}" alt="{esc(r["title"])}の部屋画像">' if img else ""
@@ -343,7 +362,7 @@ def build_reports(reports):
   {comment}
   {spoiler}
 </article>"""
-        desc = (r["comment"].splitlines() or [""])[0] or f'{fmt_date(r["date"])} {r["sys"]}'.strip()
+        desc = (r["comment"].splitlines() or [""])[0] or f'{fmt_period(r)} {r["sys"]}'.strip()
         (OUT / "reports" / f"{s}.html").write_text(page(
             title=r["title"], description=desc, path=f"reports/{s}.html", root="../", current="report",
             body=body, image=img), encoding="utf-8")
