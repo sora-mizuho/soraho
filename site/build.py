@@ -438,12 +438,12 @@ def build_home(scenarios, reports, profile):
     {"".join(links)}
   </dl>
 </section>
-{f'<div class="abouts">{extra}</div>' if extra else ""}
 <div class="entries">
   <a class="entry e-rp" href="reports/index.html{V}"><span class="e-title">🎲 卓報告</span><span class="e-sub">遊んだ卓の記録とネタバレ感想</span><span class="e-n">{len(reports)}件</span></a>
   <a class="entry e-sc" href="scenarios.html{V}"><span class="e-title">📚 シナリオ一覧</span><span class="e-sub">通過・所持・KP/GM済みのシナリオ</span><span class="e-n">{len(scenarios)}件</span></a>
   <a class="entry e-tk" href="tokui.html{V}"><span class="e-title">🧡 得意と苦手</span><span class="e-sub">好きなこと・苦手なこと・NG（地雷）</span><span class="e-n">同卓前にご確認ください</span></a>
 </div>
+{f'<div class="abouts">{extra}</div>' if extra else ""}
 {footer_note}"""
     (OUT / "index.html").write_text(page(
         title=CONFIG["site_title"], description=CONFIG["site_description"], path="",
