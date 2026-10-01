@@ -180,6 +180,73 @@ def load_tokui_from_notion():
     return items
 
 
+# プロフィール・お知らせページ：見出し2ごとに、その下の文章をまとめる
+PROFILE_SPECIAL = ["ひとこと", "所持ルールブック", "SNSについて", "このサイトについて", "シナリオ一覧のお知らせ", "得意と苦手のお知らせ"]
+PROFILE_BLOCKS = {"paragraph": "p", "bulleted_list_item": "li", "numbered_list_item": "li", "quote": "p"}
+
+
+def rich_html(items):
+    out = []
+    for t in items:
+        s = esc(t.get("plain_text", "")).replace("\n", "<br>")
+        href = t.get("href")
+        out.append(f'<a href="{esc(href)}" target="_blank" rel="noopener">{s}</a>' if href else s)
+    return "".join(out).strip()
+
+
+def load_profile_from_notion():
+    page_id = CONFIG["notion"].get("profile_page_id")
+    if not page_id:
+        return None
+    blocks, cursor = [], None
+    try:
+        while True:
+            res = notion(f"blocks/{page_id}/children?page_size=100" + (f"&start_cursor={cursor}" if cursor else ""))
+            blocks += res["results"]
+            if not res.get("has_more"):
+                break
+            cursor = res["next_cursor"]
+    except Exception as e:  # 読めなくてもサイトは作る（見本の文章を使う）
+        print(f"注意：プロフィール・お知らせのページを読み込めませんでした（{e}）。見本の文章を使います", file=sys.stderr)
+        return None
+    sections, cur = {}, None
+    for b in blocks:
+        kind = b["type"]
+        if kind in ("heading_1", "heading_2", "heading_3"):
+            cur = "".join(t.get("plain_text", "") for t in b[kind]["rich_text"]).strip()
+            sections.setdefault(cur, [])
+        elif cur and kind in PROFILE_BLOCKS:
+            h = rich_html(b[kind]["rich_text"])
+            if h:
+                sections[cur].append((PROFILE_BLOCKS[kind], h))
+    return sections
+
+
+def load_profile_seed():
+    raw = json.loads((ROOT / "seed" / "profile.json").read_text(encoding="utf-8"))
+    return {k: [(kind, esc(t)) for kind, t in v] for k, v in raw.items()}
+
+
+def blocks_html(items):
+    """段落と箇条書きを HTML にする。続く箇条書きは1つのリストにまとめる。"""
+    out, lis = [], []
+    for kind, h in items:
+        if kind == "li":
+            lis.append(f"<li>{h}</li>")
+            continue
+        if lis:
+            out.append("<ul>" + "".join(lis) + "</ul>")
+            lis = []
+        out.append(f"<p>{h}</p>")
+    if lis:
+        out.append("<ul>" + "".join(lis) + "</ul>")
+    return "".join(out)
+
+
+def plain(items):
+    return " ".join(re.sub(r"<[^>]+>", "", h) for _, h in items)
+
+
 def load_seed():
     s = json.loads((ROOT / "seed" / "scenarios.json").read_text(encoding="utf-8"))
     r = json.loads((ROOT / "seed" / "reports.json").read_text(encoding="utf-8"))
@@ -320,7 +387,7 @@ def level_key(level):
     return "other" if level else ""
 
 
-def build_tokui(items):
+def build_tokui(items, profile):
     rated = [i for i in items if i["level"]]
     sections = []
     groups = [(key, label) for _, key, label in LEVELS]
@@ -339,41 +406,54 @@ def build_tokui(items):
             + "</li>" for i in rows)
         sections.append(f'<section class="tk-sec tk-{cls}"><h2 class="tk-head"><span class="tk-label">{esc(label)}</span>'
                         f'<span class="tk-n">{len(rows)}件</span></h2><ul class="tk-list">{lis}</ul></section>')
-    intro = '<p class="tk-intro">同卓するときの参考にどうぞ。△ は配慮があると嬉しいもの、✕ は避けたいもの（地雷）です。気になることがあれば、事前に気軽に聞いてください。</p>'
+    intro = f'<div class="tk-intro">{blocks_html(profile.get("得意と苦手のお知らせ", []))}</div>'
     body = intro + ("".join(sections) if sections else '<p class="empty">ただいま準備中です。</p>')
     (OUT / "tokui.html").write_text(page(
         title="得意と苦手", description="TRPGで好きなこと・苦手なこと・NG（地雷）の一覧です。", path="tokui.html",
         root="", current="tokui", body=body), encoding="utf-8")
 
 
-def build_home(scenarios, reports):
+def build_home(scenarios, reports, profile):
     p = CONFIG["profile"]
     links = []
     if p.get("x"):
         links.append(f'<dt>X</dt><dd><a href="https://x.com/{esc(p["x"])}" target="_blank" rel="noopener">@{esc(p["x"])}</a></dd>')
     if p.get("mixi2"):
         links.append(f'<dt>mixi2</dt><dd>@{esc(p["mixi2"])}</dd>')
+    sns_note = profile.get("SNSについて")
+    if sns_note:
+        links.append(f'<dd class="note">{blocks_html(sns_note)}</dd>')
+    intro = blocks_html(profile.get("ひとこと", [])) or f"<p>{multiline(p['intro'])}</p>"
+    books = plain(profile.get("所持ルールブック", [])) or p["owned_books"]
+    extra = "".join(
+        f'<section class="about"><h2>{esc(k)}</h2>{blocks_html(v)}</section>'
+        for k, v in profile.items() if k not in PROFILE_SPECIAL and v)
+    site_note = profile.get("このサイトについて")
+    footer_note = f'<section class="site-note"><h2>このサイトについて</h2>{blocks_html(site_note)}</section>' if site_note else ""
     body = f"""<section class="profile">
   <h1>{esc(p["name"])}</h1>
-  <p>{multiline(p["intro"])}</p>
+  <div class="intro">{intro}</div>
   <dl>
-    <dt>所持ルールブック</dt><dd>{esc(p["owned_books"])}</dd>
+    <dt>所持ルールブック</dt><dd>{esc(books)}</dd>
     {"".join(links)}
   </dl>
 </section>
+{f'<div class="abouts">{extra}</div>' if extra else ""}
 <div class="entries">
   <a class="entry e-rp" href="reports/index.html{V}"><span class="e-title">🎲 卓報告</span><span class="e-sub">遊んだ卓の記録とネタバレ感想</span><span class="e-n">{len(reports)}件</span></a>
   <a class="entry e-sc" href="scenarios.html{V}"><span class="e-title">📚 シナリオ一覧</span><span class="e-sub">通過・所持・KP/GM済みのシナリオ</span><span class="e-n">{len(scenarios)}件</span></a>
   <a class="entry e-tk" href="tokui.html{V}"><span class="e-title">🧡 得意と苦手</span><span class="e-sub">好きなこと・苦手なこと・NG（地雷）</span><span class="e-n">同卓前にご確認ください</span></a>
-</div>"""
+</div>
+{footer_note}"""
     (OUT / "index.html").write_text(page(
         title=CONFIG["site_title"], description=CONFIG["site_description"], path="",
         root="", current="home", body=body), encoding="utf-8")
 
 
-def build_scenarios(scenarios):
+def build_scenarios(scenarios, profile):
     data = json.dumps(scenarios, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    body = """<div class="systems" id="systems"></div>
+    notice = profile.get("シナリオ一覧のお知らせ")
+    body = (f'<div class="notice">{blocks_html(notice)}</div>' if notice else "") + """<div class="systems" id="systems"></div>
 <div class="tools">
   <input class="search" id="q" type="search" placeholder="シナリオ名・ふりがなで探す" aria-label="シナリオを検索">
   <button class="chip" data-k="own" aria-pressed="false">所持</button>
@@ -436,9 +516,13 @@ def main():
     if os.environ.get("NOTION_TOKEN"):
         print("Notion からデータを読み込みます")
         scenarios, reports, tokui = load_from_notion()
+        profile = load_profile_from_notion()
     else:
         print("NOTION_TOKEN がないため、見本データでサイトを作ります")
         scenarios, reports, tokui = load_seed()
+        profile = None
+    if profile is None:
+        profile = load_profile_seed()
     reports.sort(key=lambda r: r["date"] or "", reverse=True)
 
     if not scenarios:
@@ -457,10 +541,10 @@ def main():
     for r in reports:
         r["_img"] = save_image(r.get("image", ""), slug(r))
 
-    build_home(scenarios, reports)
-    build_scenarios(scenarios)
+    build_home(scenarios, reports, profile)
+    build_scenarios(scenarios, profile)
     build_reports(reports)
-    build_tokui(tokui)
+    build_tokui(tokui, profile)
     print(f"完了: シナリオ {len(scenarios)} 件、卓報告 {len(reports)} 件 → {OUT}")
 
 

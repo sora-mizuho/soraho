@@ -31,6 +31,15 @@ nav.main a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accen
 .profile dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:4px 0 0;font-size:14px}
 .profile dt{color:var(--muted);font-weight:700;white-space:nowrap}
 .profile dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.profile .intro p,.profile dd p{margin:0}
+.profile dd.note{grid-column:2;font-size:13px;color:var(--muted);line-height:1.6;margin-top:-2px}
+/* ホームの自己紹介の下に並ぶ項目（Notion の見出しごと） */
+.abouts{display:flex;flex-direction:column;gap:18px;margin-bottom:30px;max-width:62ch}
+.about h2,.site-note h2{font-size:15px;font-weight:900;margin:0 0 4px;padding-left:10px;border-left:3px solid var(--accent)}
+.about p,.site-note p{margin:0 0 4px}
+.about ul,.site-note ul,.notice ul,.tk-intro ul{margin:0 0 4px;padding-left:1.4em}
+.site-note{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted);max-width:62ch}
+.site-note h2{font-size:13.5px;color:var(--ink)}
 .entries{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .entry{color:var(--ink);text-decoration:none;background:var(--tint);border:1px solid var(--line);border-radius:12px;padding:20px 20px 18px;display:flex;flex-direction:column;gap:4px}
 .entry:hover{border-color:var(--accent)}
@@ -41,6 +50,8 @@ nav.main a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accen
 .e-title{font-weight:900;font-size:20px}.e-sub{font-size:13.5px;color:var(--muted)}.e-n{font-size:13px;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px}
 
 /* scenarios */
+.notice{background:#fdf6ec;border:1px solid #f5dfc4;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:14px}
+.notice p{margin:0}.notice p+p{margin-top:4px}
 .systems{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .sys{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--tint);color:var(--ink);border-radius:999px;padding:6px 14px 6px 12px;cursor:pointer;display:flex;align-items:center;gap:8px}
 .sys .dot{width:10px;height:10px;transform:rotate(45deg);border-radius:2px;background:var(--c)}
@@ -104,6 +115,7 @@ details.spoiler .in{padding:0 16px 16px}
 
 /* 得意と苦手 */
 .tk-intro{margin:0 0 20px;color:var(--muted);max-width:62ch}
+.tk-intro p{margin:0}.tk-intro p+p{margin-top:6px}
 .tk-sec{margin-bottom:26px;--c:var(--muted);--cb:var(--tint)}
 .tk-love{--c:var(--love);--cb:var(--love-bg)}.tk-ok{--c:var(--ok);--cb:var(--ok-bg)}.tk-weak{--c:var(--weak);--cb:var(--weak-bg)}.tk-ng{--c:var(--ng);--cb:var(--ng-bg)}
 .tk-head{display:flex;align-items:baseline;gap:12px;margin:0 0 6px;padding-bottom:6px;border-bottom:2px solid var(--c)}
