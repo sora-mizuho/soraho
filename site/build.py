@@ -334,7 +334,7 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
            ("scenarios.html", "📚 シナリオ一覧", "scenarios"), ("tokui.html", "🧡 得意と苦手", "tokui")]
     cur = ' aria-current="page"'
     nav_html = "".join(
-        f'<a href="{root}{href}{V}"{cur if key == current else ""}>{label}</a>' for href, label, key in nav
+        f'<a href="{root}{href}{V}"{cur if key == current or (key, current) == ("reports", "report") else ""}>{label}</a>' for href, label, key in nav
     )
     meta = [
         f'<meta name="description" content="{esc(description)}">',
@@ -359,14 +359,14 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
 {extra_head}
 </head>
 <body>
-<div class="wrap">
-<div class="top">
+<div class="bar"><div class="top">
 <header class="site">
   <a class="logo" href="{root}index.html{V}">{esc(CONFIG["site_title"])}</a>
   <p>{esc(CONFIG["site_description"])}</p>
 </header>
 <nav class="main">{nav_html}</nav>
-</div>
+</div></div>
+<div class="wrap">
 <main>
 {body}
 </main>

@@ -77,7 +77,7 @@
   });
 
   // 固定したサイト名とメニューの高さぶん、50音の目次を下にずらす
-  const nav = document.querySelector(".top");
+  const nav = document.querySelector(".bar");
   const syncNav = () => document.documentElement.style.setProperty("--navh", nav.offsetHeight + "px");
   window.addEventListener("resize", syncNav);
   syncNav();
