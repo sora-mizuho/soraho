@@ -419,7 +419,7 @@ def build_home(scenarios, reports, profile):
     if p.get("x"):
         links.append(f'<dt>X</dt><dd><a href="https://x.com/{esc(p["x"])}" target="_blank" rel="noopener">@{esc(p["x"])}</a></dd>')
     if p.get("mixi2"):
-        links.append(f'<dt>mixi2</dt><dd>@{esc(p["mixi2"])}</dd>')
+        links.append(f'<dt>mixi2</dt><dd><a href="https://mixi.social/@{esc(p["mixi2"])}" target="_blank" rel="noopener">@{esc(p["mixi2"])}</a></dd>')
     sns_note = profile.get("SNSについて")
     if sns_note:
         links.append(f'<dd class="note">{blocks_html(sns_note)}</dd>')
