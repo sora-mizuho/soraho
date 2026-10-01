@@ -34,6 +34,10 @@ nav.main a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accen
 .entries{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .entry{color:var(--ink);text-decoration:none;background:var(--tint);border:1px solid var(--line);border-radius:12px;padding:20px 20px 18px;display:flex;flex-direction:column;gap:4px}
 .entry:hover{border-color:var(--accent)}
+/* ホームのボタンをほんのり色分け */
+.e-rp{background:#f0effa;border-color:#dedcf2}.e-rp:hover{border-color:#6b66b8}
+.e-sc{background:#ecf3fb;border-color:#d6e4f4}.e-sc:hover{border-color:#2f78c4}
+.e-tk{background:#fdf2e6;border-color:#f5dfc4}.e-tk:hover{border-color:#d9822b}
 .e-title{font-weight:900;font-size:20px}.e-sub{font-size:13.5px;color:var(--muted)}.e-n{font-size:13px;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px}
 
 /* scenarios */
