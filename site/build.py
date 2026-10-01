@@ -93,9 +93,31 @@ def title_prop(pr):
     return next((v for v in pr.values() if v.get("type") == "title"), None)
 
 
+SCENARIO_PROPS = ["ふりがな", "システム", "遊んだHO", "タグ", "所持", "PL通過", "KP/GM済み", "BOOTH"]
+REPORT_PROPS = ["開催日", "システム", "KP/GM", "参加者", "一言コメント", "ネタバレ感想", "部屋画像"]
+
+
+def check_props(pages, names, label):
+    """Notion の欄が見つからないときは、空のサイトを公開せずに止める（今のサイトはそのまま残る）。"""
+    if not pages:
+        return
+    pr = pages[0]["properties"]
+    missing = [n for n in names if prop(pr, n) is None]
+    if title_prop(pr) is None:
+        missing.insert(0, "タイトル")
+    if missing:
+        sys.exit(
+            f"エラー：Notion の「{label}」で、次の欄が見つかりません：{'、'.join(missing)}\n"
+            f"欄の名前を変えた場合は、元の名前で始まるように戻してください（例：「{missing[0]}（説明）」は OK）。\n"
+            "サイトは更新せず、今の状態のまま残しています。"
+        )
+
+
 def load_from_notion():
     scenarios = []
-    for p in query_all(CONFIG["notion"]["scenarios_database_id"]):
+    scenario_pages = query_all(CONFIG["notion"]["scenarios_database_id"])
+    check_props(scenario_pages, SCENARIO_PROPS, "シナリオ一覧")
+    for p in scenario_pages:
         pr = p["properties"]
         name = text(title_prop(pr))
         if not name or name.startswith("【見本】"):
@@ -103,16 +125,19 @@ def load_from_notion():
         scenarios.append({
             "n": name,
             "f": text(prop(pr, "ふりがな")) or name,
-            "s": select(prop(pr, "システム")) or "CoC6版",
+            "s": select(prop(pr, "システム")) or "システム未設定",
             "ho": text(prop(pr, "遊んだHO")),
             "t": [o["name"] for o in (prop(pr, "タグ") or {}).get("multi_select", [])],
             "own": bool((prop(pr, "所持") or {}).get("checkbox")),
             "pl": bool((prop(pr, "PL通過") or {}).get("checkbox")),
             "kp": bool((prop(pr, "KP/GM済み") or {}).get("checkbox")),
             "url": (prop(pr, "BOOTH") or {}).get("url") or "",
+            "_nofuri": not text(prop(pr, "ふりがな")),
         })
     reports = []
-    for p in query_all(CONFIG["notion"]["reports_database_id"]):
+    report_pages = query_all(CONFIG["notion"]["reports_database_id"])
+    check_props(report_pages, REPORT_PROPS, "卓報告")
+    for p in report_pages:
         pr = p["properties"]
         title = text(title_prop(pr))
         if not title:
@@ -337,6 +362,14 @@ def main():
         print("NOTION_TOKEN がないため、見本データでサイトを作ります")
         scenarios, reports = load_seed()
     reports.sort(key=lambda r: r["date"] or "", reverse=True)
+
+    if not scenarios:
+        sys.exit("エラー：シナリオが1件も読み込めませんでした。サイトは更新せず、今の状態のまま残しています。")
+    for s in scenarios:
+        if s.pop("_nofuri", False) and not s["n"].isascii():
+            print(f"注意：「{s['n']}」のふりがなが空です（50音順の並びがずれます）", file=sys.stderr)
+        if s["s"] == "システム未設定":
+            print(f"注意：「{s['n']}」のシステムが空です（「システム未設定」タブに出ます）", file=sys.stderr)
 
     if OUT.exists():
         shutil.rmtree(OUT)

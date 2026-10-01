@@ -1,9 +1,15 @@
 (function () {
   const DATA = JSON.parse(document.getElementById("scenario-data").textContent);
-  const SYS = [
+  // よく使うシステムはこの順・この色で並べ、Notion で増えたシステムは後ろに自動で足す
+  const KNOWN = [
     { k: "CoC6版", c: "var(--coc6)" },
     { k: "CoC7版", c: "var(--coc7)" },
     { k: "エモクロア", c: "var(--emo)" },
+  ];
+  const present = [...new Set(DATA.map((d) => d.s))];
+  const SYS = [
+    ...KNOWN.filter((s) => present.includes(s.k)),
+    ...present.filter((k) => !KNOWN.some((s) => s.k === k)).sort().map((k) => ({ k, c: "var(--muted)" })),
   ];
   const ROWS = [["あ", "ぁ-おゔ"], ["か", "か-ご"], ["さ", "さ-ぞ"], ["た", "た-ど"], ["な", "な-の"],
     ["は", "は-ぽ"], ["ま", "ま-も"], ["や", "ゃ-よ"], ["ら", "ら-ろ"], ["わ", "ゎ-ん"]];
@@ -16,7 +22,7 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   // 最初は「CoC6版・PL通過」で表示する
-  const st = { sys: "CoC6版", q: "", own: false, pl: true, kp: false };
+  const st = { sys: SYS.some((s) => s.k === "CoC6版") ? "CoC6版" : (SYS[0] || {}).k, q: "", own: false, pl: true, kp: false };
 
   const $sys = document.getElementById("systems");
   const $index = document.getElementById("index");
@@ -29,7 +35,7 @@
   }
 
   function renderList() {
-    const c = SYS.find((s) => s.k === st.sys).c;
+    const c = (SYS.find((s) => s.k === st.sys) || { c: "var(--muted)" }).c;
     const q = st.q.trim().toLowerCase();
     const items = DATA.filter((d) => d.s === st.sys && (!st.own || d.own) && (!st.pl || d.pl) && (!st.kp || d.kp) &&
       (!q || d.n.toLowerCase().includes(q) || d.f.toLowerCase().includes(q)))
