@@ -346,7 +346,16 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
         f'<meta name="twitter:card" content="{"summary_large_image" if og_image else "summary"}">',
     ]
     if og_image:
-        meta.append(f'<meta property="og:image" content="{esc(og_image)}">')
+        # X などが画像を確実に読み込めるよう、画像の情報をくわしく書いておく
+        meta += [
+            f'<meta property="og:image" content="{esc(og_image)}">',
+            f'<meta name="twitter:image" content="{esc(og_image)}">',
+            f'<meta property="og:image:alt" content="{esc(title)}">',
+        ]
+        if image == "assets/ogp.png":
+            meta += ['<meta property="og:image:type" content="image/png">',
+                     '<meta property="og:image:width" content="1200">',
+                     '<meta property="og:image:height" content="630">']
     return f"""<!doctype html>
 <html lang="ja">
 <head>
