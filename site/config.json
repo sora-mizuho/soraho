@@ -11,6 +11,7 @@
   },
   "notion": {
     "scenarios_database_id": "d0c59603585d4567805047501a2304d9",
-    "reports_database_id": "e7184ca1a72b47709087654c4b65b0c6"
+    "reports_database_id": "e7184ca1a72b47709087654c4b65b0c6",
+    "tokui_database_id": "8ff307d61cf74c86998c7729ca1bf0b9"
   }
 }

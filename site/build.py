@@ -95,6 +95,7 @@ def title_prop(pr):
 
 
 SCENARIO_PROPS = ["ふりがな", "システム", "遊んだHO", "タグ", "所持", "PL通過", "KP/GM済み", "BOOTH"]
+TOKUI_PROPS = ["分類", "度合い", "メモ"]
 REPORT_PROPS = ["開催日", "システム", "KP/GM", "参加者", "一言コメント", "ネタバレ感想", "部屋画像"]
 
 
@@ -160,13 +161,30 @@ def load_from_notion():
             "spoiler": text(prop(pr, "ネタバレ感想")),
             "image": next((u for u in imgs if u), ""),
         })
-    return scenarios, reports
+    return scenarios, reports, load_tokui_from_notion()
+
+
+def load_tokui_from_notion():
+    db = CONFIG["notion"].get("tokui_database_id")
+    if not db:
+        return []
+    pages = query_all(db)
+    check_props(pages, TOKUI_PROPS, "得意と苦手")
+    items = []
+    for p in pages:
+        pr = p["properties"]
+        name = text(title_prop(pr))
+        if name:
+            items.append({"name": name, "cat": select(prop(pr, "分類")), "level": select(prop(pr, "度合い")),
+                          "memo": text(prop(pr, "メモ"))})
+    return items
 
 
 def load_seed():
     s = json.loads((ROOT / "seed" / "scenarios.json").read_text(encoding="utf-8"))
     r = json.loads((ROOT / "seed" / "reports.json").read_text(encoding="utf-8"))
-    return s, r
+    t = json.loads((ROOT / "seed" / "tokui.json").read_text(encoding="utf-8"))
+    return s, r, t
 
 
 # ---------- helpers ----------
@@ -243,7 +261,8 @@ def save_image(url, name):
 def page(*, title, description, path, root, current, body, image="", extra_head="", scripts=""):
     full_title = title if title == CONFIG["site_title"] else f"{title}｜{CONFIG['site_title']}"
     og_image = BASE + image if image else ""
-    nav = [("index.html", "ホーム", "home"), ("reports/index.html", "🎲 卓報告", "reports"), ("scenarios.html", "📚 シナリオ一覧", "scenarios")]
+    nav = [("index.html", "ホーム", "home"), ("reports/index.html", "🎲 卓報告", "reports"),
+           ("scenarios.html", "📚 シナリオ一覧", "scenarios"), ("tokui.html", "💗 得意と苦手", "tokui")]
     cur = ' aria-current="page"'
     nav_html = "".join(
         f'<a href="{root}{href}{V}"{cur if key == current else ""}>{label}</a>' for href, label, key in nav
@@ -290,6 +309,43 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
 
 # ---------- pages ----------
 
+LEVELS = [("◎", "love", "◎ 好き・得意"), ("○", "ok", "○ 大丈夫"), ("△", "weak", "△ 苦手"), ("✕", "ng", "✕ NG")]
+CAT_ORDER = ["描写", "展開", "関係性", "進行・卓の雰囲気"]
+
+
+def level_key(level):
+    for mark, key, _ in LEVELS:
+        if level.startswith(mark) or (mark == "✕" and level.startswith(("×", "x", "X"))):
+            return key
+    return "other" if level else ""
+
+
+def build_tokui(items):
+    rated = [i for i in items if i["level"]]
+    sections = []
+    groups = [(key, label) for _, key, label in LEVELS]
+    others = sorted({i["level"] for i in rated if level_key(i["level"]) == "other"})
+    groups += [("other:" + o, o) for o in others]
+    for key, label in groups:
+        rows = [i for i in rated if (level_key(i["level"]) == key if not key.startswith("other:") else i["level"] == key[6:])]
+        if not rows:
+            continue
+        rows.sort(key=lambda i: (CAT_ORDER.index(i["cat"]) if i["cat"] in CAT_ORDER else len(CAT_ORDER), i["cat"], i["name"]))
+        cls = key if not key.startswith("other:") else "other"
+        lis = "".join(
+            f'<li class="tk-item"><span class="tk-name">{esc(i["name"])}</span>'
+            + (f'<span class="tk-cat">{esc(i["cat"])}</span>' if i["cat"] else "")
+            + (f'<span class="tk-memo">{multiline(i["memo"])}</span>' if i["memo"] else "")
+            + "</li>" for i in rows)
+        sections.append(f'<section class="tk-sec tk-{cls}"><h2 class="tk-head"><span class="tk-label">{esc(label)}</span>'
+                        f'<span class="tk-n">{len(rows)}件</span></h2><ul class="tk-list">{lis}</ul></section>')
+    intro = '<p class="tk-intro">同卓するときの参考にどうぞ。△ は配慮があると嬉しいもの、✕ は避けたいもの（地雷）です。気になることがあれば、事前に気軽に聞いてください。</p>'
+    body = intro + ("".join(sections) if sections else '<p class="empty">ただいま準備中です。</p>')
+    (OUT / "tokui.html").write_text(page(
+        title="得意と苦手", description="TRPGで好きなこと・苦手なこと・NG（地雷）の一覧です。", path="tokui.html",
+        root="", current="tokui", body=body), encoding="utf-8")
+
+
 def build_home(scenarios, reports):
     p = CONFIG["profile"]
     links = []
@@ -308,6 +364,7 @@ def build_home(scenarios, reports):
 <div class="entries">
   <a class="entry" href="reports/index.html{V}"><span class="e-title">🎲 卓報告</span><span class="e-sub">遊んだ卓の記録とネタバレ感想</span><span class="e-n">{len(reports)}件</span></a>
   <a class="entry" href="scenarios.html{V}"><span class="e-title">📚 シナリオ一覧</span><span class="e-sub">通過・所持・KP/GM済みのシナリオ</span><span class="e-n">{len(scenarios)}件</span></a>
+  <a class="entry" href="tokui.html{V}"><span class="e-title">💗 得意と苦手</span><span class="e-sub">好きなこと・苦手なこと・NG（地雷）</span><span class="e-n">同卓前にご確認ください</span></a>
 </div>"""
     (OUT / "index.html").write_text(page(
         title=CONFIG["site_title"], description=CONFIG["site_description"], path="",
@@ -378,10 +435,10 @@ def build_reports(reports):
 def main():
     if os.environ.get("NOTION_TOKEN"):
         print("Notion からデータを読み込みます")
-        scenarios, reports = load_from_notion()
+        scenarios, reports, tokui = load_from_notion()
     else:
         print("NOTION_TOKEN がないため、見本データでサイトを作ります")
-        scenarios, reports = load_seed()
+        scenarios, reports, tokui = load_seed()
     reports.sort(key=lambda r: r["date"] or "", reverse=True)
 
     if not scenarios:
@@ -403,6 +460,7 @@ def main():
     build_home(scenarios, reports)
     build_scenarios(scenarios)
     build_reports(reports)
+    build_tokui(tokui)
     print(f"完了: シナリオ {len(scenarios)} 件、卓報告 {len(reports)} 件 → {OUT}")
 
 

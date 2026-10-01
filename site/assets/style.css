@@ -4,6 +4,7 @@
   --accent:#3b3f8f; --accent-soft:#e8e9f6; --on-accent:#ffffff;
   --own:#8a5a2b; --own-bg:#f5ebdf; --pl:#1f5fae; --pl-bg:#e2ecf9; --kp:#7a3fa0; --kp-bg:#f0e4f7;
   --coc6:#d9822b; --coc7:#2f78c4; --emo:#a64fb6;
+  --love:#2f7d4f; --love-bg:#e3f3e9; --ok:#1f5fae; --ok-bg:#e2ecf9; --weak:#9a6a00; --weak-bg:#fbf0d4; --ng:#b3261e; --ng-bg:#fbe4e2;
   --spoil:#2a2440; --spoil-fg:#efe9ff;
   --font:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
   color-scheme:light;
@@ -97,6 +98,18 @@ details.spoiler[open] summary::after{content:"閉じる"}
 details.spoiler .in{padding:0 16px 16px}
 .back{font-weight:700;text-decoration:none}
 
+/* 得意と苦手 */
+.tk-intro{margin:0 0 20px;color:var(--muted);max-width:62ch}
+.tk-sec{margin-bottom:26px;--c:var(--muted);--cb:var(--tint)}
+.tk-love{--c:var(--love);--cb:var(--love-bg)}.tk-ok{--c:var(--ok);--cb:var(--ok-bg)}.tk-weak{--c:var(--weak);--cb:var(--weak-bg)}.tk-ng{--c:var(--ng);--cb:var(--ng-bg)}
+.tk-head{display:flex;align-items:baseline;gap:12px;margin:0 0 6px;padding-bottom:6px;border-bottom:2px solid var(--c)}
+.tk-label{font-size:20px;font-weight:900;color:var(--c)}
+.tk-n{font-size:13px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.tk-list{list-style:none;margin:0;padding:0}
+.tk-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;padding:10px 4px;border-bottom:1px solid var(--line)}
+.tk-name{font-weight:700;min-width:0;overflow-wrap:anywhere}
+.tk-cat{font-size:12px;font-weight:700;color:var(--c);background:var(--cb);border-radius:4px;padding:0 8px;white-space:nowrap}
+.tk-memo{grid-column:1/-1;font-size:13px;color:var(--muted);line-height:1.6}
 .totop{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;font:inherit;font-weight:700;font-size:13px;background:var(--accent);color:var(--on-accent);border:0;border-radius:999px;padding:10px 16px;box-shadow:0 4px 14px rgba(29,34,54,.18);cursor:pointer}
 [hidden]{display:none!important}
 footer.site{margin-top:48px;font-size:12px;color:var(--muted)}
