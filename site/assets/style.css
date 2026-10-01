@@ -35,7 +35,7 @@ nav.main a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accen
 .profile dt{color:var(--muted);font-weight:700;white-space:nowrap}
 .profile dd{margin:0;min-width:0;overflow-wrap:anywhere}
 .profile .intro p,.profile dd p{margin:0}
-.profile dd.note{grid-column:2;font-size:13px;color:var(--muted);line-height:1.6;margin-top:-2px}
+.profile dd.note{grid-column:1/-1;font-size:13px;color:var(--muted);line-height:1.6;margin-top:2px}
 /* ホームの自己紹介の下に並ぶ項目（Notion の見出しごと） */
 .abouts{display:flex;flex-direction:column;gap:18px;margin-bottom:30px}
 .about h2,.site-note h2{font-size:15px;font-weight:900;margin:0 0 4px;padding-left:10px;border-left:3px solid var(--accent)}
