@@ -362,6 +362,8 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
     cross = f'<a class="cross" href="{root}{st["cross"][0]}{V}">{st["cross"][1]} →</a>' if st["cross"] else ""
     css = "".join(f'<link rel="stylesheet" href="{root}{c}{V}">' for c in st["css"])
     meta = [
+        # ネタバレを含むので、Google などの検索結果には出さない（X のリンクカードには影響しない）
+        '<meta name="robots" content="noindex, nofollow, noarchive, noimageindex">',
         f'<meta name="description" content="{esc(description)}">',
         f'<meta property="og:title" content="{esc(full_title)}">',
         f'<meta property="og:description" content="{esc(description)}">',
