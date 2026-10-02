@@ -6,7 +6,8 @@
 .bar{background-image:url(stars.svg)}
 nav.main a[aria-current="page"]{border-bottom-color:var(--yellow)}
 .about h2,.site-note h2{border-left-color:var(--yellow)}
-.nudge{background:var(--yellow-soft)}.nudge a{color:var(--yellow-ink)}
+.nudge{background:var(--yellow-soft)}
+.notice{background:var(--accent-soft);border-color:#dcd5f3}.nudge a{color:var(--yellow-ink)}
 
 /* ホーム：推しの名前を丸いラベルで */
 .oshi{display:flex;flex-wrap:wrap;gap:6px}

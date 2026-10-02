@@ -551,7 +551,7 @@ def build_reports(reports):
 
 VIDEO_PROPS = ["ライバー", "種類", "URL", "ひとこと"]
 VIDEO_KINDS = ["歌ってみた", "オリ曲", "配信", "コラボ"]
-OSHI_SPECIAL = ["ひとこと", "推し", "よく見る", "ゲーム"]
+OSHI_SPECIAL = ["ひとこと", "推し", "よく見る", "ゲーム", "好きな歌みた・配信のお知らせ"]
 
 
 def youtube_id(url):
@@ -662,7 +662,9 @@ def build_oshi(profile, rules, videos, livers):
     cards = "".join(video_card(v) for v in videos)
     listing = (f'<div class="vids" id="vids">{cards}</div><p class="empty" id="none" hidden>条件に合う動画がありません。</p>'
                if cards else '<p class="empty">ただいま準備中です。</p>')
-    body = chip_row("ライバー", "liver", liver_list) + chip_row("種類", "kind", kind_list) + listing
+    notice = profile.get("好きな歌みた・配信のお知らせ")
+    body = (f'<div class="notice">{blocks_html(notice)}</div>' if notice else "") + \
+        chip_row("ライバー", "liver", liver_list) + chip_row("種類", "kind", kind_list) + listing
     (OUT / "oshi" / "videos.html").write_text(page(
         title="好きな歌みた・配信", description="好きな歌ってみた・オリ曲・配信のまとめです。", path="oshi/videos.html",
         current="videos", body=body, scripts=f'<script src="../assets/oshi.js{V}"></script>', **common), encoding="utf-8")
