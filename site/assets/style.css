@@ -25,6 +25,10 @@ img{max-width:100%;height:auto}
 header.site{display:flex;flex-direction:column;gap:4px;margin-bottom:18px}
 .site .logo{font-weight:900;font-size:clamp(26px,6vw,36px);letter-spacing:.06em;line-height:1.25;text-decoration:none;color:var(--ink)}
 .site p{margin:0;color:var(--muted)}
+/* サイト名の右に、もう一方のサイトへのリンク */
+.ttl{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.cross{flex:none;font-size:13px;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:4px 12px}
+.cross:hover{background:rgba(255,255,255,.26)}
 /* サイト名とメニューは、画面の端から端までの濃い紫の帯にして上に固定する（うっすらサイコロ柄） */
 .bar{position:sticky;top:0;z-index:4;background:var(--bar) url(dice.svg) repeat;background-size:160px;box-shadow:0 2px 14px rgba(59,63,143,.18)}
 .top{max-width:900px;margin:0 auto;padding:28px 32px 0}
@@ -37,6 +41,8 @@ nav.main a:hover{color:#fff}
 @media (max-width:700px){
   /* スマホではメニューを1行に収める */
   .top{padding:18px 14px 0}
+  .site .logo{font-size:clamp(20px,6vw,26px);letter-spacing:.04em}
+  .ttl{gap:8px}.cross{font-size:12px;padding:3px 9px}
   nav.main{flex-wrap:nowrap;gap:0;justify-content:space-between;overflow-x:auto;margin-inline:-6px}
   nav.main a{padding:9px 6px;font-size:13px;white-space:nowrap}
 }

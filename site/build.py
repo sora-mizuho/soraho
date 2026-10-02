@@ -196,10 +196,8 @@ def rich_html(items):
     return "".join(out).strip()
 
 
-def load_profile_from_notion():
-    page_id = CONFIG["notion"].get("profile_page_id")
-    if not page_id:
-        return None
+def load_page_sections(page_id, label):
+    """Notion のページを読み、見出しごとに段落・箇条書きをまとめる。読めなければ None。"""
     blocks, cursor = [], None
     try:
         while True:
@@ -209,7 +207,7 @@ def load_profile_from_notion():
                 break
             cursor = res["next_cursor"]
     except Exception as e:  # 読めなくてもサイトは作る（見本の文章を使う）
-        print(f"注意：プロフィール・お知らせのページを読み込めませんでした（{e}）。見本の文章を使います", file=sys.stderr)
+        print(f"注意：{label}のページを読み込めませんでした（{e}）。見本の文章を使います", file=sys.stderr)
         return None
     sections, cur = {}, None
     for b in blocks:
@@ -222,6 +220,11 @@ def load_profile_from_notion():
             if h:
                 sections[cur].append((PROFILE_BLOCKS[kind], h))
     return sections
+
+
+def load_profile_from_notion():
+    page_id = CONFIG["notion"].get("profile_page_id")
+    return load_page_sections(page_id, "プロフィール・お知らせ") if page_id else None
 
 
 def load_profile_seed():
@@ -327,22 +330,44 @@ def save_image(url, name):
     return "img/" + name + ext
 
 
-def page(*, title, description, path, root, current, body, image="", extra_head="", scripts=""):
-    full_title = title if title == CONFIG["site_title"] else f"{title}｜{CONFIG['site_title']}"
+OSHI = CONFIG.get("oshi")
+SITES = {
+    "trpg": {
+        "title": CONFIG["site_title"], "description": CONFIG["site_description"], "home": "index.html", "css": [],
+        "nav": [("index.html", "ホーム", "home"), ("reports/index.html", "🎲 卓報告", "reports"),
+                ("scenarios.html", "📚 シナリオ一覧", "scenarios"), ("tokui.html", "🧡 得意と苦手", "tokui")],
+        "cross": ("oshi/index.html", "🌟 推しごと帳") if OSHI else None,
+    },
+}
+if OSHI:
+    SITES["oshi"] = {
+        "title": OSHI["site_title"], "description": OSHI["site_description"], "home": "oshi/index.html",
+        "css": ["assets/oshi.css"],
+        "nav": [("oshi/index.html", "ホーム", "home"), ("oshi/rules.html", "⚠️ 注意事項", "rules"),
+                ("oshi/videos.html", "🎵 好きな歌みた・配信", "videos")],
+        "cross": ("index.html", "🎲 卓記録"),
+    }
+SHARE_IMAGES = ("assets/ogp.png", "assets/ogp-oshi.png")  # 1200×630 で作った共有用の画像
+
+
+def page(*, title, description, path, root, current, body, image="", extra_head="", scripts="", site="trpg"):
+    st = SITES[site]
+    full_title = title if title == st["title"] else f"{title}｜{st['title']}"
     og_image = BASE + image if image else ""
-    nav = [("index.html", "ホーム", "home"), ("reports/index.html", "🎲 卓報告", "reports"),
-           ("scenarios.html", "📚 シナリオ一覧", "scenarios"), ("tokui.html", "🧡 得意と苦手", "tokui")]
     cur = ' aria-current="page"'
     nav_html = "".join(
-        f'<a href="{root}{href}{V}"{cur if key == current or (key, current) == ("reports", "report") else ""}>{label}</a>' for href, label, key in nav
+        f'<a href="{root}{href}{V}"{cur if key == current or (key, current) == ("reports", "report") else ""}>{label}</a>'
+        for href, label, key in st["nav"]
     )
+    cross = f'<a class="cross" href="{root}{st["cross"][0]}{V}">{st["cross"][1]} →</a>' if st["cross"] else ""
+    css = "".join(f'<link rel="stylesheet" href="{root}{c}{V}">' for c in st["css"])
     meta = [
         f'<meta name="description" content="{esc(description)}">',
         f'<meta property="og:title" content="{esc(full_title)}">',
         f'<meta property="og:description" content="{esc(description)}">',
         f'<meta property="og:type" content="{"article" if current == "report" else "website"}">',
         f'<meta property="og:url" content="{esc(BASE + path)}">',
-        f'<meta property="og:site_name" content="{esc(CONFIG["site_title"])}">',
+        f'<meta property="og:site_name" content="{esc(st["title"])}">',
         f'<meta name="twitter:card" content="{"summary_large_image" if og_image else "summary"}">',
     ]
     if og_image:
@@ -352,7 +377,7 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
             f'<meta name="twitter:image" content="{esc(og_image)}">',
             f'<meta property="og:image:alt" content="{esc(title)}">',
         ]
-        if image == "assets/ogp.png":
+        if image in SHARE_IMAGES:
             meta += ['<meta property="og:image:type" content="image/png">',
                      '<meta property="og:image:width" content="1200">',
                      '<meta property="og:image:height" content="630">']
@@ -365,13 +390,14 @@ def page(*, title, description, path, root, current, body, image="", extra_head=
 {chr(10).join(meta)}
 {FONT_LINK}
 <link rel="stylesheet" href="{root}assets/style.css{V}">
+{css}
 {extra_head}
 </head>
 <body>
 <div class="bar"><div class="top">
 <header class="site">
-  <a class="logo" href="{root}index.html{V}">{esc(CONFIG["site_title"])}</a>
-  <p>{esc(CONFIG["site_description"])}</p>
+  <div class="ttl"><a class="logo" href="{root}{st["home"]}{V}">{esc(st["title"])}</a>{cross}</div>
+  <p>{esc(st["description"])}</p>
 </header>
 <nav class="main">{nav_html}</nav>
 </div></div>
@@ -521,15 +547,141 @@ def build_reports(reports):
         root="../", current="reports", body=listing), encoding="utf-8")
 
 
+# ---------- 推しごと帳 ----------
+
+VIDEO_PROPS = ["ライバー", "種類", "URL", "ひとこと"]
+VIDEO_KINDS = ["歌ってみた", "オリ曲", "配信", "コラボ"]
+OSHI_SPECIAL = ["ひとこと", "推し", "よく見る", "ゲーム"]
+
+
+def youtube_id(url):
+    m = re.search(r"(?:youtu\.be/|[?&]v=|/(?:live|shorts|embed)/)([\w-]{11})", url or "")
+    return m.group(1) if m else ""
+
+
+def load_oshi_from_notion():
+    ids = OSHI["notion"]
+    profile = load_page_sections(ids["profile_page_id"], "推しごと帳のプロフィール")
+    rules = load_page_sections(ids["rules_page_id"], "推しごと帳の注意事項")
+    db = ids["videos_database_id"]
+    pages = query_all(db)
+    check_props(pages, VIDEO_PROPS, "好きな歌みた・配信")
+    # ライバーの並びは、Notion の選択肢の順（50音順で作ってある）にそろえる
+    schema = notion(f"databases/{db}")["properties"]
+    livers = [o["name"] for o in (prop(schema, "ライバー") or {}).get("multi_select", {}).get("options", [])]
+    videos = []
+    for p in sorted(pages, key=lambda p: p["created_time"], reverse=True):  # 新しく足したものを上に
+        pr = p["properties"]
+        title = text(title_prop(pr))
+        if not title:
+            continue
+        videos.append({
+            "title": title,
+            "livers": [o["name"] for o in (prop(pr, "ライバー") or {}).get("multi_select", [])],
+            "kind": select(prop(pr, "種類")),
+            "url": (prop(pr, "URL") or {}).get("url") or "",
+            "comment": text(prop(pr, "ひとこと")),
+        })
+    return profile, rules, videos, livers
+
+
+def load_oshi_seed():
+    raw = json.loads((ROOT / "seed" / "oshi.json").read_text(encoding="utf-8"))
+    def sec(d):
+        return {k: [(kind, esc(t)) for kind, t in v] for k, v in d.items()}
+    return sec(raw["profile"]), sec(raw["rules"]), raw["videos"], raw["livers"]
+
+
+def chips(items, main=False):
+    return '<span class="oshi">' + "".join(
+        f'<span class="{"main" if main else ""}">{"⭐ " if main else ""}{h}</span>' for _, h in items) + "</span>"
+
+
+def video_card(v):
+    vid = youtube_id(v["url"])
+    thumb = (f'<img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy">' if vid
+             else '<span class="ph" aria-hidden="true">🎵</span>')
+    kind = f'<span class="kind">{esc(v["kind"])}</span>' if v["kind"] else ""
+    who = "".join(f"<span>{esc(name)}</span>" for name in v["livers"])
+    comment = f'<p class="c">{multiline(v["comment"])}</p>' if v["comment"] else ""
+    href = f' href="{esc(v["url"])}" target="_blank" rel="noopener"' if v["url"] else ""
+    livers = esc("|".join(v["livers"]))
+    return (f'<article class="vid" data-livers="{livers}" data-kind="{esc(v["kind"])}">'
+            f'<a class="th"{href}>{thumb}{kind}</a>'
+            f'<div class="b"><a class="t"{href}>{esc(v["title"])}</a><span class="who">{who}</span>{comment}</div>'
+            "</article>")
+
+
+def chip_row(label, key, values):
+    if not values:
+        return ""
+    btns = f'<button class="chip" data-f="{key}" data-v="" aria-pressed="true">すべて</button>' + "".join(
+        f'<button class="chip" data-f="{key}" data-v="{esc(v)}" aria-pressed="false">{esc(v)}</button>' for v in values)
+    return f'<div class="chips"><span class="lab">{label}</span>{btns}</div>'
+
+
+def build_oshi(profile, rules, videos, livers):
+    (OUT / "oshi").mkdir(exist_ok=True)
+    common = dict(root="../", site="oshi")
+
+    # ホーム
+    rows = []
+    if profile.get("推し"):
+        rows.append(f"<dt>推し</dt><dd>{chips(profile['推し'], main=True)}</dd>")
+    if profile.get("よく見る"):
+        rows.append(f"<dt>よく見る</dt><dd>{chips(profile['よく見る'])}</dd>")
+    if profile.get("ゲーム"):
+        rows.append(f"<dt>ゲーム</dt><dd>{'、'.join(h for _, h in profile['ゲーム'])}</dd>")
+    if OSHI.get("x"):
+        rows.append(f'<dt>X</dt><dd><a href="https://x.com/{esc(OSHI["x"])}" target="_blank" rel="noopener">@{esc(OSHI["x"])}</a></dd>')
+    extra = "".join(f'<section class="about"><h2>{esc(k)}</h2>{blocks_html(v)}</section>'
+                    for k, v in profile.items() if k not in OSHI_SPECIAL and v)
+    body = f"""<section class="profile">
+  <h1>{esc(CONFIG["profile"]["name"])}</h1>
+  <div class="intro">{blocks_html(profile.get("ひとこと", []))}</div>
+  <dl>{"".join(rows)}</dl>
+</section>
+<p class="nudge">はじめての方は <a href="rules.html{V}">⚠️ 注意事項</a> もご確認ください</p>
+{f'<div class="abouts">{extra}</div>' if extra else ""}"""
+    (OUT / "oshi" / "index.html").write_text(page(
+        title=OSHI["site_title"], description=OSHI["site_description"], path="oshi/", current="home",
+        body=body, image="assets/ogp-oshi.png", **common), encoding="utf-8")
+
+    # 注意事項
+    secs = "".join(f'<section class="about"><h2>{esc(k)}</h2>{blocks_html(v)}</section>' for k, v in rules.items() if v)
+    body = f'<div class="abouts">{secs}</div>' if secs else '<p class="empty">ただいま準備中です。</p>'
+    (OUT / "oshi" / "rules.html").write_text(page(
+        title="注意事項", description="推し活での注意事項です。", path="oshi/rules.html", current="rules",
+        body=body, **common), encoding="utf-8")
+
+    # 好きな歌みた・配信（ライバーと種類のボタンで絞り込む）
+    used = {name for v in videos for name in v["livers"]}
+    liver_list = [name for name in livers if name in used] + sorted(used - set(livers))
+    kinds = {v["kind"] for v in videos if v["kind"]}
+    kind_list = [k for k in VIDEO_KINDS if k in kinds] + sorted(kinds - set(VIDEO_KINDS))
+    cards = "".join(video_card(v) for v in videos)
+    listing = (f'<div class="vids" id="vids">{cards}</div><p class="empty" id="none" hidden>条件に合う動画がありません。</p>'
+               if cards else '<p class="empty">ただいま準備中です。</p>')
+    body = chip_row("ライバー", "liver", liver_list) + chip_row("種類", "kind", kind_list) + listing
+    (OUT / "oshi" / "videos.html").write_text(page(
+        title="好きな歌みた・配信", description="好きな歌ってみた・オリ曲・配信のまとめです。", path="oshi/videos.html",
+        current="videos", body=body, scripts=f'<script src="../assets/oshi.js{V}"></script>', **common), encoding="utf-8")
+
+
 def main():
     if os.environ.get("NOTION_TOKEN"):
         print("Notion からデータを読み込みます")
         scenarios, reports, tokui = load_from_notion()
         profile = load_profile_from_notion()
+        oshi = load_oshi_from_notion() if OSHI else None
     else:
         print("NOTION_TOKEN がないため、見本データでサイトを作ります")
         scenarios, reports, tokui = load_seed()
         profile = None
+        oshi = load_oshi_seed() if OSHI else None
+    if oshi:  # ページが読めなかったところは見本の文章で埋める
+        seed = load_oshi_seed()
+        oshi = (oshi[0] if oshi[0] is not None else seed[0], oshi[1] if oshi[1] is not None else seed[1], oshi[2], oshi[3])
     if profile is None:
         profile = load_profile_seed()
     reports.sort(key=lambda r: r["date"] or "", reverse=True)
@@ -554,6 +706,8 @@ def main():
     build_scenarios(scenarios, profile)
     build_reports(reports)
     build_tokui(tokui, profile)
+    if oshi:
+        build_oshi(*oshi)
     print(f"完了: シナリオ {len(scenarios)} 件、卓報告 {len(reports)} 件 → {OUT}")
 
 
